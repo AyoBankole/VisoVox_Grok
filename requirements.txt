@@ -1,0 +1,11 @@
+openai
+python-dotenv
+bs4
+gradio
+opencv-python
+gtts
+pillow
+torch
+transformers
+gdown
+fpdf
