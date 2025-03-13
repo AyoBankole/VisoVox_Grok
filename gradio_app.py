@@ -1,25 +1,25 @@
 import os
 import io
-import random
 from PIL import Image
 from transformers import BlipProcessor, BlipForConditionalGeneration
 import torch
-import gdown
 from gtts import gTTS
 import gradio as gr
 
 def load_trained_model():
-    model_path = "model/blip_image_captioning_model.pth"
-    drive_link = "https://drive.google.com/file/d/1UyHlFI5EVWskNh_p3ZgQvHKA9IdG6pIY/view?usp=drive_link"  # Replace with your actual file ID or direct link
-
-    # Download the model if it does not exist
-    if not os.path.exists(model_path):
-        os.makedirs("model", exist_ok=True)
-        gdown.download(drive_link, model_path, quiet=False)
-
-    state_dict = torch.load(model_path, map_location=torch.device("cpu"))
-    model = BlipForConditionalGeneration.from_pretrained('Salesforce/blip-image-captioning-base')
-    model.load_state_dict(state_dict)
+    # Specify a directory where the model will be cached
+    model_cache_dir = "Model"
+    os.makedirs(model_cache_dir, exist_ok=True)
+    
+    # Load the model directly from Hugging Face Hub.
+    # This will download the model if it's not already in the cache.
+    try:
+        model = BlipForConditionalGeneration.from_pretrained(
+            'Salesforce/blip-image-captioning-base',
+            cache_dir=model_cache_dir
+        )
+    except Exception as e:
+        raise RuntimeError(f"Error loading model from Hugging Face: {e}")
     return model
 
 # Initialize the processor and model
@@ -42,10 +42,10 @@ def text_to_speech(text):
 def process_image(image):
     caption = get_caption(image)
     audio_bytes = text_to_speech(caption)
-    # Return the input image along with caption and audio
+    # Return the input image along with the caption and audio
     return image, caption, audio_bytes
 
-# Gradio Interface with three outputs: Image, Textbox, and Audio.
+# Create Gradio Interface with three outputs: Image, Textbox, and Audio.
 iface = gr.Interface(
     fn=process_image,
     inputs=gr.Image(type="pil", label="Upload or Capture Image"),

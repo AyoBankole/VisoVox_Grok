@@ -9,3 +9,5 @@ torch
 transformers
 gdown
 fpdf
+tensorflow
+tensorflow-cpu
