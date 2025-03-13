@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # VisoVox AI - Visual Assistant
 
 VisoVox AI is a powerful **AI-driven visual assistant** that can generate **and convert image captions** to **speech**. It utilizes the **BLIP (Bootstrapped Language-Image Pretraining) model** to generate captions for uploaded or captured images and converts the generated text into speech using **gTTS (Google Text-to-Speech)**.
