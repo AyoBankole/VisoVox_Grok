@@ -10,3 +10,5 @@ gdown
 fpdf
 tensorflow
 tensorflow-cpu
+PyOpenGL
+PyOpenGL_accelerate
