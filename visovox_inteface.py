@@ -43,7 +43,7 @@ st.markdown(
 )
 
 # Side bar logo
-st.sidebar.image("C:\\Users\\User\\OneDrive\\Desktop\\DATA SCIENCE\\GEN_ai\\VisoVox_Grok\\vivox.png", width=100)
+st.sidebar.image("vivox.png", width=100)
 
 # Sidebar: User Onboarding, Emergency Contacts, and About
 st.sidebar.header("VisoVox AI")
