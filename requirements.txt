@@ -1,7 +1,7 @@
 python-dotenv
 bs4
 gradio
-opencv-python
+opencv-python-headless
 gtts
 pillow
 torch
