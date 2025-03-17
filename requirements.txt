@@ -6,9 +6,11 @@ gtts
 pillow
 torch
 transformers
-gdown
-fpdf
 tensorflow
 tensorflow-cpu
 PyOpenGL
 PyOpenGL_accelerate
+speechrecognition
+pyttsx3
+pyaudio
+sounddevice
