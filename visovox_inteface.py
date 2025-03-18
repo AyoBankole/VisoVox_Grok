@@ -1,8 +1,7 @@
 import os
 import io
 from PIL import Image
-from transformers import BlipImageProcessor, BlipForConditionalGeneration
-BlipProcessor = BlipImageProcessor  # Alias for compatibility
+from transformers import BlipImageProcessor, BlipTokenizer, BlipForConditionalGeneration
 from transformers import AutoProcessor, AutoModelForVisualQuestionAnswering
 from gtts import gTTS
 import streamlit as st
@@ -116,27 +115,27 @@ st.sidebar.markdown(
 )
 
 # -------------------------------------------------------------------
-# Load the BLIP captioning model and processor (cached for efficiency)
+# Load the BLIP captioning model and processor/tokenizer (cached for efficiency)
 @st.cache_resource
 def initialize_caption_model():
     model_cache_dir = "Model_Caption"
     os.makedirs(model_cache_dir, exist_ok=True)
     try:
-        processor_caption = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base", cache_dir=model_cache_dir)
+        processor_caption = BlipImageProcessor.from_pretrained("Salesforce/blip-image-captioning-base", cache_dir=model_cache_dir)
+        tokenizer_caption = BlipTokenizer.from_pretrained("Salesforce/blip-image-captioning-base", cache_dir=model_cache_dir)
         model_caption = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base", cache_dir=model_cache_dir)
     except Exception as e:
         st.error(f"Error loading caption model: {e}")
         raise e
-    return processor_caption, model_caption
+    return processor_caption, tokenizer_caption, model_caption
 
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
-processor_caption, model_caption = initialize_caption_model()
+processor_caption, tokenizer_caption, model_caption = initialize_caption_model()
 
 def get_caption(image):
     """Generates a caption for the input image using the BLIP captioning model."""
     inputs = processor_caption(image, return_tensors="pt")
     out = model_caption.generate(**inputs)
-    caption = processor_caption.decode(out[0], skip_special_tokens=True)
+    caption = tokenizer_caption.decode(out[0], skip_special_tokens=True)
     return caption
 
 def text_to_speech(text):
