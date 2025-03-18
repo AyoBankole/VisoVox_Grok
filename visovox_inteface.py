@@ -2,8 +2,35 @@ import os
 import io
 from PIL import Image
 from transformers import AutoProcessor, BlipForConditionalGeneration, AutoModelForVisualQuestionAnswering
+from transformers import BlipImageProcessor
 from gtts import gTTS
 import streamlit as st
+
+# Define text_to_speech and process_image helper functions early
+def text_to_speech(text):
+    """Converts the given text to speech using gTTS and returns audio bytes."""
+    tts = gTTS(text=text, lang='en')
+    audio_fp = io.BytesIO()
+    tts.write_to_fp(audio_fp)
+    audio_fp.seek(0)
+    return audio_fp.getvalue()
+
+def get_caption(image):
+    """Generates a caption for the input image using the BLIP captioning model."""
+    inputs = processor_caption(image, return_tensors="pt")
+    out = model_caption.generate(**inputs)
+    # If the processor has a tokenizer, use it; otherwise, try to decode directly.
+    if hasattr(processor_caption, "tokenizer"):
+        caption = processor_caption.tokenizer.decode(out[0], skip_special_tokens=True)
+    else:
+        caption = processor_caption.decode(out[0], skip_special_tokens=True)
+    return caption
+
+def process_image(image):
+    """Processes the image: generates a caption and converts it to speech."""
+    caption = get_caption(image)
+    audio_bytes = text_to_speech(caption)
+    return caption, audio_bytes
 
 # Custom CSS for a creative, modern look
 st.markdown(
@@ -114,7 +141,7 @@ st.sidebar.markdown(
 )
 
 # -------------------------------------------------------------------
-# Load the BLIP captioning model using AutoProcessor (cached for efficiency)
+# Load the BLIP captioning model and processor using AutoProcessor for captioning
 @st.cache_resource
 def initialize_caption_model():
     model_cache_dir = "Model_Caption"
@@ -128,31 +155,6 @@ def initialize_caption_model():
     return processor_caption, model_caption
 
 processor_caption, model_caption = initialize_caption_model()
-
-def get_caption(image):
-    """Generates a caption for the input image using the BLIP captioning model."""
-    inputs = processor_caption(image, return_tensors="pt")
-    out = model_caption.generate(**inputs)
-    # Attempt to decode using the processor's tokenizer if available
-    if hasattr(processor_caption, "tokenizer"):
-        caption = processor_caption.tokenizer.decode(out[0], skip_special_tokens=True)
-    else:
-        caption = processor_caption.decode(out[0], skip_special_tokens=True)
-    return caption
-
-def text_to_speech(text):
-    """Converts the given text to speech using gTTS and returns audio bytes."""
-    tts = gTTS(text=text, lang='en')
-    audio_fp = io.BytesIO()
-    tts.write_to_fp(audio_fp)
-    audio_fp.seek(0)
-    return audio_fp.getvalue()
-
-def process_image(image):
-    """Processes the image: generates a caption and converts it to speech."""
-    caption = get_caption(image)
-    audio_bytes = text_to_speech(caption)
-    return caption, audio_bytes
 
 # (Optional) Set environment variable for oneDNN custom operations.
 os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
