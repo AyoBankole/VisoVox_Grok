@@ -1,7 +1,8 @@
 import os
 import io
 from PIL import Image
-from transformers import BlipProcessor, BlipForConditionalGeneration
+from transformers import BlipImageProcessor, BlipForConditionalGeneration
+BlipProcessor = BlipImageProcessor  # Alias for compatibility
 from transformers import AutoProcessor, AutoModelForVisualQuestionAnswering
 from gtts import gTTS
 import streamlit as st
@@ -62,7 +63,6 @@ if user_name and user_name.strip():
 # Sidebar Conversation UI for Image Q&A
 if "conversation" not in st.session_state:
     st.session_state["conversation"] = []
-
 st.sidebar.subheader("VisoVox Image Q&A Chat")
 user_question = st.sidebar.text_input("Ask a question about the image:")
 
@@ -92,6 +92,28 @@ def get_vqa_answer(question, image):
     out = model_vqa.generate(**inputs)
     answer = processor_vqa.decode(out[0], skip_special_tokens=True)
     return answer
+
+if st.sidebar.button("Send Question"):
+    if "image" in st.session_state:
+        answer = get_vqa_answer(user_question, st.session_state["image"])
+        st.session_state.conversation.append(("User", user_question))
+        st.session_state.conversation.append(("VisoChat", answer))
+        # Convert answer to speech and play in sidebar
+        audio_answer = text_to_speech(answer)
+        st.sidebar.audio(audio_answer, format="audio/mp3")
+    else:
+        st.session_state.conversation.append(("VisoChat", "Please process an image first."))
+
+if st.session_state.conversation:
+    for speaker, message in st.session_state.conversation:
+        st.sidebar.markdown(f"**{speaker}:** {message}")
+
+# --- Emergency Contacts ---
+st.sidebar.markdown("### Emergency Contact")
+st.sidebar.markdown(
+    '<a class="emergency-link" href="tel:112" style="text-decoration: none;">🚨 Emergency</a>',
+    unsafe_allow_html=True,
+)
 
 # -------------------------------------------------------------------
 # Load the BLIP captioning model and processor (cached for efficiency)
@@ -131,28 +153,8 @@ def process_image(image):
     audio_bytes = text_to_speech(caption)
     return caption, audio_bytes
 
-# -------------------------------------------------------------------
-if st.sidebar.button("Send Question"):
-    if "image" in st.session_state:
-        answer = get_vqa_answer(user_question, st.session_state["image"])
-        st.session_state.conversation.append(("User", user_question))
-        st.session_state.conversation.append(("VisoChat", answer))
-        # Convert answer to speech and play in sidebar
-        audio_answer = text_to_speech(answer)
-        st.sidebar.audio(audio_answer, format="audio/mp3")
-    else:
-        st.session_state.conversation.append(("VisoChat", "Please process an image first."))
-
-if st.session_state.conversation:
-    for speaker, message in st.session_state.conversation:
-        st.sidebar.markdown(f"**{speaker}:** {message}")
-
-# --- Emergency Contacts ---
-st.sidebar.markdown("### Emergency Contact")
-st.sidebar.markdown(
-    '<a class="emergency-link" href="tel:112" style="text-decoration: none;">🚨 Emergency</a>',
-    unsafe_allow_html=True,
-)
+# (Optional) Set environment variable for oneDNN custom operations.
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
 def main():
     # Main title with custom CSS class
