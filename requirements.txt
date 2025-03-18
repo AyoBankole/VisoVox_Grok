@@ -11,6 +11,3 @@ tensorflow-cpu
 PyOpenGL
 PyOpenGL_accelerate
 speechrecognition
-pyttsx3
-pyaudio
-sounddevice
