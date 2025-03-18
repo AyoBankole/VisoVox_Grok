@@ -5,57 +5,66 @@ from transformers import BlipProcessor, BlipForConditionalGeneration
 from transformers import AutoProcessor, AutoModelForVisualQuestionAnswering
 from gtts import gTTS
 import streamlit as st
-import sounddevice as sd
-import numpy as np
-import speech_recognition as sr
 
-# NEW: Voice command listener using sounddevice (defined at the top so it is available)
-def listen_voice_command():
-    """Listens for a voice command using sounddevice and returns the recognized text."""
-    duration = 5  # seconds to record
-    fs = 44100   # sample rate
-    st.info("Listening for voice command (using sounddevice)...")
-    try:
-        audio_data = sd.rec(int(duration * fs), samplerate=fs, channels=1, dtype='int16')
-        sd.wait()  # Wait until recording is finished
-        audio_bytes = audio_data.tobytes()
-        # Create an AudioData instance compatible with speech_recognition
-        audio = sr.AudioData(audio_bytes, fs, 2)
-        recognizer = sr.Recognizer()
-        command = recognizer.recognize_google(audio)
-        st.success(f"Voice command: {command}")
-        return command.lower()
-    except Exception as e:
-        st.error("Voice command not recognized.")
-        return ""
+# Custom CSS for a creative, modern look
+st.markdown(
+    """
+    <style>
+    /* Set a gradient background */
+    .stApp {
+        background: linear-gradient(135deg, #ffffff 0%, #1F509A 100%);
+    }
+    /* Style the title */
+    .title {
+        font-size: 3rem;
+        font-weight: bold;
+        text-align: center;
+        color: #ffffff;
+        text-shadow: 2px 2px #000000;
+    }
+    /* Style for subtitles */
+    .subtitle {
+        font-size: 1.5rem;
+        color: #ffffff;
+    }
+    /* Style the sidebar text */
+    .sidebar .sidebar-content {
+        font-size: 1.1rem;
+    }
+    /* Style emergency call links */
+    .emergency-link {
+        font-size: 1.3rem;
+        color: red;
+        font-weight: bold;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
-# NEW: Function to trigger voice-controlled actions
-def handle_voice_control():
-    """Handles voice commands to control the app."""
-    command = listen_voice_command()
-    # Control webcam vs. upload
-    if "capture" in command or "take picture" in command:
-        st.session_state["voice_capture"] = True
-        st.success("Voice command: Using webcam for image capture.")
-    elif "upload" in command:
-        st.session_state["voice_capture"] = False
-        st.success("Voice command: Set to upload an image.")
-    # Voice question handling
-    elif "ask" in command or "question" in command:
-        st.session_state["voice_question"] = True
-        st.success("Voice command: Ready to ask your question.")
-    # Read out caption immediately if commanded
-    elif "read caption" in command or "read description" in command:
-        if "image" in st.session_state:
-            cap = get_caption(st.session_state["image"])
-            audio_bytes = text_to_speech(cap)
-            st.audio(audio_bytes, format="audio/mp3")
-            if audio_bytes:
-                st.download_button("Download Caption Audio", data=audio_bytes, file_name="caption.mp3", mime="audio/mp3")
-            st.success("Caption read out loud.")
-        else:
-            st.error("No image found to read caption from.")
-    # Additional commands can be added here
+# Side bar logo
+st.sidebar.image("vivox.png", width=100)
+
+# Sidebar: User Onboarding, Emergency Contacts, and About
+st.sidebar.header("VisoVox AI")
+st.sidebar.info(
+    """
+    **VisoVox AI** empowers visually impaired users by converting images into descriptive captions and providing both audio feedback and interactive Q&A about the image.
+    Upload or capture an image and then ask any question about it!
+    """
+)
+
+# --- User Onboarding ---
+user_name = st.sidebar.text_input("Enter your name:", key="user_name")
+if user_name and user_name.strip():
+    st.sidebar.markdown(f"### Welcome, {user_name}!", unsafe_allow_html=True)
+
+# Sidebar Conversation UI for Image Q&A
+if "conversation" not in st.session_state:
+    st.session_state["conversation"] = []
+
+st.sidebar.subheader("VisoVox Image Q&A Chat")
+user_question = st.sidebar.text_input("Ask a question about the image:")
 
 # -------------------------------------------------------------------
 # Load the BLIP VQA model and processor (cached for efficiency)
@@ -123,91 +132,14 @@ def process_image(image):
     return caption, audio_bytes
 
 # -------------------------------------------------------------------
-# Custom CSS for a creative, modern look
-st.markdown(
-    """
-    <style>
-    /* Set a gradient background */
-    .stApp {
-        background: linear-gradient(135deg, #ffffff 0%, #1F509A 100%);
-    }
-    /* Style the title */
-    .title {
-        font-size: 3rem;
-        font-weight: bold;
-        text-align: center;
-        color: #ffffff;
-        text-shadow: 2px 2px #000000;
-    }
-    /* Style for subtitles */
-    .subtitle {
-        font-size: 1.5rem;
-        color: #ffffff;
-    }
-    /* Style the sidebar text */
-    .sidebar .sidebar-content {
-        font-size: 1.1rem;
-    }
-    /* Style emergency call links */
-    .emergency-link {
-        font-size: 1.3rem;
-        color: red;
-        font-weight: bold;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
-# Side bar logo
-st.sidebar.image("vivox.png", width=100)
-
-# Sidebar: User Onboarding, Emergency Contacts, and About
-st.sidebar.header("VisoVox AI")
-
-# --- About VisoVox AI ---
-st.sidebar.info(
-    """
-    **VisoVox AI** empowers visually impaired users by converting images into descriptive captions and providing both audio feedback and interactive Q&A about the image.
-    Upload or capture an image and then ask any question about it!
-    """
-)
-
-# --- User Onboarding ---
-user_name = st.sidebar.text_input("Enter your name:", key="user_name")
-if user_name and user_name.strip():
-    st.sidebar.markdown(f"### Welcome, {user_name}!", unsafe_allow_html=True)
-
-# Sidebar Conversation UI for Image Q&A
-if "conversation" not in st.session_state:
-    st.session_state["conversation"] = []
-
-st.sidebar.subheader("VisoVox Image Q&A Chat")
-user_question = st.sidebar.text_input("Ask a question about the image:")
-
-# NEW: Sidebar button to record a voice question
-if st.sidebar.button("Record Voice Question"):
-    voice_question = listen_voice_command()
-    if voice_question:
-        if "image" in st.session_state:
-            answer = get_vqa_answer(voice_question, st.session_state["image"])
-            st.session_state.conversation.append(("User (Voice)", voice_question))
-            st.session_state.conversation.append(("VisoChat", answer))
-            st.sidebar.markdown(f"**User (Voice):** {voice_question}")
-            st.sidebar.markdown(f"**VisoChat:** {answer}")
-            audio_ans = text_to_speech(answer)
-            st.sidebar.audio(audio_ans, format="audio/mp3")
-            if audio_ans:
-                st.sidebar.download_button("Download Answer Audio", data=audio_ans, file_name="answer.mp3", mime="audio/mp3")
-        else:
-            st.sidebar.error("Please process an image first.")
-
-# -------------------------------------------------------------------
 if st.sidebar.button("Send Question"):
     if "image" in st.session_state:
         answer = get_vqa_answer(user_question, st.session_state["image"])
         st.session_state.conversation.append(("User", user_question))
         st.session_state.conversation.append(("VisoChat", answer))
+        # Convert answer to speech and play in sidebar
+        audio_answer = text_to_speech(answer)
+        st.sidebar.audio(audio_answer, format="audio/mp3")
     else:
         st.session_state.conversation.append(("VisoChat", "Please process an image first."))
 
@@ -222,28 +154,18 @@ st.sidebar.markdown(
     unsafe_allow_html=True,
 )
 
-# -------------------------------------------------------------------
 def main():
     # Main title with custom CSS class
     st.markdown("<h1 class='title'>VisoVox AI - Empowering Accessibility with Vision & Voice</h1>", unsafe_allow_html=True)
     
-    # Display greeting in the main area if the name is provided via sidebar.
+    # Display greeting if provided via sidebar
     if "user_name" in st.session_state and st.session_state["user_name"].strip():
         st.markdown(f"<h2 class='subtitle'>Hello, {st.session_state['user_name']}! Welcome to VisoVox AI.</h2>", unsafe_allow_html=True)
     
     st.write("Upload an image or capture one using your webcam to generate a caption and listen to the description.")
     
-    # NEW: Voice Command Control Button
-    if st.button("Activate Voice Command Control"):
-        handle_voice_control()
-    
-    # NEW: If voice command set image capture mode, override input method
-    if "voice_capture" in st.session_state and st.session_state["voice_capture"] is True:
-        st.info("Using webcam for image capture (set via voice command).")
-        input_method = "Take a picture (Webcam)"
-    else:
-        # Choose the image input method.
-        input_method = st.radio("Select image input method:", ("Upload image", "Take a picture (Webcam)"))
+    # Choose the image input method.
+    input_method = st.radio("Select image input method:", ("Upload image", "Take a picture (Webcam)"))
     
     image = None
     if input_method == "Upload image":
@@ -254,23 +176,6 @@ def main():
         camera_image = st.camera_input("Capture an image")
         if camera_image is not None:
             image = Image.open(camera_image)
-    
-    # NEW: If voice command set question mode, automatically capture voice question
-    if "voice_question" in st.session_state and st.session_state["voice_question"] is True:
-        st.session_state["voice_question"] = False  # reset flag
-        st.info("Please speak your question now...")
-        voice_q = listen_voice_command()
-        if "image" in st.session_state:
-            answer = get_vqa_answer(voice_q, st.session_state["image"])
-            st.session_state.conversation.append(("User", voice_q))
-            st.session_state.conversation.append(("VisoChat", answer))
-            st.success(f"Answer: {answer}")
-            audio_ans = text_to_speech(answer)
-            st.audio(audio_ans, format="audio/mp3")
-            if audio_ans:
-                st.download_button("Download Answer Audio", data=audio_ans, file_name="answer.mp3", mime="audio/mp3")
-        else:
-            st.error("No image available to answer your question.")
     
     if image is not None:
         # Store image in session state for Q&A usage.
