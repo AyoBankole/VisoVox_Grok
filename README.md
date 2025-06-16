@@ -12,7 +12,7 @@ VisoVox AI is a powerful **AI-driven visual assistant** that can generate **and 
 Ensure you have **Python 3.7+** installed. Then, install the required dependencies:
 
 ```bash
-pip install torch transformers gradio gtts
+pip install torch transformers streamlit gtts
 ```
 
 ## 🚀 Usage
