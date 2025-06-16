@@ -1,4 +1,19 @@
-# VisoVox AI - Visual Assistant
+<p align="center">
+  <img src="visovox.png" alt="VisoVox Logo" width="150"/>
+</p>
+
+<h1 align="center">🎙️🧠 VisoVox AI — Visual Assistant for Accessibility</h1>
+
+<p align="center">
+  <b>Empowering the visually impaired with intelligent image captioning and speech output</b>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Built%20with-Streamlit-FF4B4B?logo=streamlit&logoColor=white" />
+  <img src="https://img.shields.io/badge/Powered%20by-BLIP-1f77b4?style=flat&logo=OpenAI&logoColor=white" />
+  <img src="https://img.shields.io/badge/Speech-gTTS-4285F4?logo=google&logoColor=white" />
+  <img src="https://img.shields.io/badge/License-MIT-green.svg" />
+</p>
 
 VisoVox AI is a powerful **AI-driven visual assistant** that can generate **and convert image captions** to **speech**. It utilizes the **BLIP (Bootstrapped Language-Image Pretraining) model** to generate captions for uploaded or captured images and converts the generated text into speech using **gTTS (Google Text-to-Speech)**.
 
@@ -20,7 +35,7 @@ pip install torch transformers streamlit gtts
 Run the application using the following command:
 
 ```bash
-python gradio_interface.py
+streamlit run visovox_inteface.py
 ```
 
 This will launch a **Gradio interface** where you can upload or capture an image and get an AI-generated caption with speech output.
@@ -50,6 +65,13 @@ This will generate a public link where others can use the app.
   - **Solution:** Ensure you have an active internet connection.
 - **Issue:** `Camera not working in Gradio`
   - **Solution:** Make sure your browser has camera permissions enabled.
+
+
+## 🤝 Let's Collaborate!
+💡 VisoVox is a growing project, and we’re open to contributors who care about AI for accessibility.
+Feel free to open an issue or submit a pull request!
+
+📬 Reach out for collaborations or feature ideas!
 
 ## 📜 License
 
