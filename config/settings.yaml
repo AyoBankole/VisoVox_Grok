@@ -1,0 +1,34 @@
+# VisoVox AI Configuration
+
+# Inference mode options:
+# - hf: Hugging Face Transformers (cloud or Colab)
+# - onnx: Local ONNX Runtime (offline/low bandwidth)
+inference_mode: "hf"     # Options: "hf", "onnx"
+
+# Enable/disable voice assistant input
+voice_input_enabled: true   # Set to false to use only text input
+
+# Language options for voice output
+# Supported: "en", "yo", "ha", "ig" (future support)
+output_language: "en"       # Yoruba: "yo", Hausa: "ha", Igbo: "ig"
+
+# Text-to-speech engine
+tts_engine: "gTTS"          # Options: "gTTS", "pyttsx3"
+
+# Hugging Face model paths
+ocr_backend: "hf"         # Options: "hf", "onnx", "tesseract"
+
+# Enable logging for usage or debugging
+logging_enabled: true
+
+# ONNX model paths
+onnx_models:
+  captioning: "models/onnx/blip_caption.onnx"
+  vqa: "models/onnx/blip_vqa.onnx"
+  ocr: "models/onnx/trocr_ocr.onnx"
+
+# Gradio app settings
+gradio:
+  enable_camera_input: true
+  use_microphone_input: true
+  max_upload_size_mb: 10

@@ -12,3 +12,6 @@ PyOpenGL
 PyOpenGL_accelerate
 speechrecognition
 streamlit
+onnxruntime
+pyttsx3
+onnx
