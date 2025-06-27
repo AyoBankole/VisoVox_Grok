@@ -1,8 +1,6 @@
 fastapi
 uvicorn
 python-multipart
-transformers
-torch
 pydantic
 aiofiles
 httpx
