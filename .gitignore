@@ -1,3 +1,6 @@
 __pycache__/
 training.ipynb/
 .env
+
+# Local Netlify folder
+.netlify

@@ -1,103 +1,40 @@
-import axios from 'axios';
+// Handles all backend API calls
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:10000";
 
-// Create axios instance with base configuration
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:10000',
-  timeout: 30000,
-  headers: {
-    'Content-Type': 'multipart/form-data',
-  },
-});
+export async function captionImage(image) {
+  const formData = new FormData();
+  formData.append("image", image);
+  const res = await fetch(`${API_URL}/api/caption/`, { method: "POST", body: formData });
+  return res.json();
+}
 
-// Request interceptor for debugging
-api.interceptors.request.use(
-  (config) => {
-    console.log('API Request:', config.method?.toUpperCase(), config.url);
-    return config;
-  },
-  (error) => {
-    console.error('API Request Error:', error);
-    return Promise.reject(error);
-  }
-);
+export async function extractText(image) {
+  const formData = new FormData();
+  formData.append("image", image);
+  const res = await fetch(`${API_URL}/api/ocr/`, { method: "POST", body: formData });
+  return res.json();
+}
 
-// Response interceptor for error handling
-api.interceptors.response.use(
-  (response) => {
-    return response;
-  },
-  (error) => {
-    console.error('API Response Error:', error);
-    
-    if (error.response) {
-      // Server responded with error status
-      const message = error.response.data?.detail || error.response.data?.message || 'Server error occurred';
-      throw new Error(message);
-    } else if (error.request) {
-      // Request made but no response received
-      throw new Error('No response from server. Please check your connection.');
-    } else {
-      // Something else happened
-      throw new Error('An unexpected error occurred');
-    }
-  }
-);
+export async function visualQA(image, question) {
+  const formData = new FormData();
+  formData.append("image", image);
+  formData.append("question", question);
+  const res = await fetch(`${API_URL}/api/vqa/`, { method: "POST", body: formData });
+  return res.json();
+}
 
-// API service functions
-export const apiService = {
-  // Image captioning
-  captionImage: async (file) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    const response = await api.post('/api/caption/', formData);
-    return response.data;
-  },
+export async function transcribeAudio(audio) {
+  const formData = new FormData();
+  formData.append("audio", audio);
+  const res = await fetch(`${API_URL}/api/audio/transcribe`, { method: "POST", body: formData });
+  return res.json();
+}
 
-  // OCR - Extract text from image
-  extractText: async (file) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    const response = await api.post('/api/ocr/', formData);
-    return response.data;
-  },
-
-  // VQA - Visual Question Answering
-  answerQuestion: async (file, question) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('question', question);
-    
-    const response = await api.post('/api/vqa/', formData);
-    return response.data;
-  },
-
-  // Audio transcription
-  transcribeAudio: async (audioFile) => {
-    const formData = new FormData();
-    formData.append('audio', audioFile);
-    
-    const response = await api.post('/api/audio/transcribe', formData);
-    return response.data;
-  },
-
-  // Text to speech
-  speakText: async (text) => {
-    const formData = new FormData();
-    formData.append('text', text);
-    
-    const response = await api.post('/api/audio/speak', formData, {
-      responseType: 'blob',
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    
-    // Create blob URL for audio playback
-    const audioBlob = new Blob([response.data], { type: 'audio/mpeg' });
-    return URL.createObjectURL(audioBlob);
-  },
-};
-
-export default api;
+export async function textToSpeech(text) {
+  const res = await fetch(`${API_URL}/api/audio/speak`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text }),
+  });
+  return res.blob();
+}
