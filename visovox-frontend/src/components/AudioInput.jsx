@@ -1,47 +1,42 @@
-import React, { useRef, useState } from "react";
+import React from 'react';
+import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 
-export default function AudioInput({ onTranscribe, loading }) {
-  const audioRef = useRef();
-  const [audioBlob, setAudioBlob] = useState(null);
-  const [recording, setRecording] = useState(false);
-  const [mediaRecorder, setMediaRecorder] = useState(null);
+export default function AudioInput({ onVoiceCommand }) {
+  const {
+    transcript,
+    listening,
+    resetTranscript,
+    browserSupportsSpeechRecognition
+  } = useSpeechRecognition();
 
-  async function startRecording() {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const recorder = new window.MediaRecorder(stream);
-    setMediaRecorder(recorder);
-    let chunks = [];
-    recorder.ondataavailable = e => chunks.push(e.data);
-    recorder.onstop = () => {
-      setAudioBlob(new Blob(chunks, { type: "audio/webm" }));
-    };
-    recorder.start();
-    setRecording(true);
-  }
+  const handleStart = () => {
+    resetTranscript();
+    SpeechRecognition.startListening({ continuous: true });
+  };
 
-  function stopRecording() {
-    mediaRecorder.stop();
-    setRecording(false);
-  }
+  const handleStop = () => {
+    SpeechRecognition.stopListening();
+    onVoiceCommand(transcript);
+  };
 
-  function handleTranscribe() {
-    onTranscribe(audioBlob);
+  if (!browserSupportsSpeechRecognition) {
+    return <p>Your browser does not support speech recognition.</p>;
   }
 
   return (
-    <div className="form-card">
-      <p>Record Audio:</p>
-      <div>
-        <button className="btn-primary" type="button" onClick={recording ? stopRecording : startRecording} disabled={loading}>
-          {recording ? "Stop Recording" : "Start Recording"}
-        </button>
-        {audioBlob && (
-          <button className="btn-secondary" type="button" onClick={handleTranscribe} disabled={loading}>
-            {loading ? "Transcribing..." : "Transcribe"}
-          </button>
-        )}
-      </div>
-      {audioBlob && <audio controls src={URL.createObjectURL(audioBlob)} />}
+    <div className="voice-input" role="form" aria-labelledby="voice-label">
+      <p id="voice-label" className="sr-only">Voice Control Section</p>
+
+      <button onClick={handleStart} className="btn" aria-label="Start voice recognition">
+        🎙️ Start Voice
+      </button>
+      <button onClick={handleStop} className="btn" aria-label="Stop voice recognition">
+        🛑 Stop
+      </button>
+
+      <p className="transcript-text" aria-live="polite">
+        Heard: {transcript || "No input yet."}
+      </p>
     </div>
   );
 }

@@ -1,54 +1,55 @@
-import React, { useRef, useState } from "react";
+import React, { useState } from 'react';
+import { uploadImage } from '../services/api';
 
-export default function UploadForm({ onSubmit, loading }) {
-  const fileInput = useRef();
-  const [mode, setMode] = useState("caption");
-  const [question, setQuestion] = useState("");
+export default function UploadForm({ onResult }) {
+  const [image, setImage] = useState(null);
 
-  function handleFileChange(e) {
-    const file = e.target.files[0];
-    if (file) onSubmit({ file, mode, question });
-  }
+  const handleFileChange = (e) => {
+    setImage(e.target.files[0]);
+  };
 
-  function handleSubmit(e) {
-    e.preventDefault();
-    if (!fileInput.current.files[0]) return;
-    onSubmit({ file: fileInput.current.files[0], mode, question });
-  }
+  const handleSubmit = async (task) => {
+    if (!image) {
+      alert("Please upload an image first.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", image);
+
+    try {
+      const data = await uploadImage(formData, task);
+      onResult(data.result || "No response received.");
+    } catch (error) {
+      onResult("Error processing your request.");
+      console.error(error);
+    }
+  };
 
   return (
-    <form className="form-card" onSubmit={handleSubmit}>
-      <label>
-        <span>Choose Image:</span>
-        <input type="file" accept="image/*" ref={fileInput} required disabled={loading} />
+    <div role="form" aria-labelledby="form-label">
+      <label id="form-label" className="label" htmlFor="image-upload">
+        Upload Image
       </label>
-      <div className="modes">
-        <label>
-          <input type="radio" value="caption" checked={mode === "caption"} onChange={() => setMode("caption")} />
-          Caption
-        </label>
-        <label>
-          <input type="radio" value="ocr" checked={mode === "ocr"} onChange={() => setMode("ocr")} />
-          OCR
-        </label>
-        <label>
-          <input type="radio" value="vqa" checked={mode === "vqa"} onChange={() => setMode("vqa")} />
-          Visual Q&A
-        </label>
+      <input
+        id="image-upload"
+        type="file"
+        accept="image/*"
+        onChange={handleFileChange}
+        aria-label="Upload an image from your device"
+      />
+
+      <div className="button-group" role="group" aria-label="AI Tasks">
+        <button onClick={() => handleSubmit("caption")} className="btn" aria-label="Generate image caption">
+          📝 Caption
+        </button>
+        <button onClick={() => handleSubmit("vqa")} className="btn" aria-label="Ask a question about the image">
+          ❓ Ask
+        </button>
+        <button onClick={() => handleSubmit("ocr")} className="btn" aria-label="Read text in the image">
+          🔊 Read
+        </button>
       </div>
-      {mode === "vqa" && (
-        <input
-          type="text"
-          placeholder="Ask a question about the image"
-          value={question}
-          onChange={e => setQuestion(e.target.value)}
-          required
-          disabled={loading}
-        />
-      )}
-      <button className="btn-primary" type="submit" disabled={loading}>
-        {loading ? "Processing..." : "Submit"}
-      </button>
-    </form>
+    </div>
   );
 }

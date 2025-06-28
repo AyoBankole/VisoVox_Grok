@@ -1,28 +1,23 @@
-import React, { useState } from "react";
+import React from 'react';
 
-export default function OutputDisplay({ result, imageUrl, mode, onSpeak }) {
-  const [playing, setPlaying] = useState(false);
-
-  async function handleSpeak() {
-    setPlaying(true);
-    await onSpeak(result.text);
-    setPlaying(false);
-  }
-
-  if (!result) return null;
+export default function OutputDisplay({ responseText }) {
+  const speak = () => {
+    const utterance = new SpeechSynthesisUtterance(responseText);
+    utterance.lang = "en-US";
+    speechSynthesis.speak(utterance);
+  };
 
   return (
-    <div className="output-card">
-      {imageUrl && <img src={imageUrl} alt="" className="output-img" />}
-      <div className="output-content">
-        {mode === "caption" && <h3>Caption:</h3>}
-        {mode === "ocr" && <h3>Extracted Text:</h3>}
-        {mode === "vqa" && <h3>Answer:</h3>}
-        <p>{result.text}</p>
-        <button className="btn-secondary" onClick={handleSpeak} disabled={playing}>
-          {playing ? "Playing..." : "Speak"}
-        </button>
-      </div>
+    <div className="output-display" role="region" aria-labelledby="output-label">
+      <h2 id="output-label" className="sr-only">AI Output</h2>
+
+      <p className="output-text" aria-live="assertive" aria-atomic="true">
+        {responseText}
+      </p>
+
+      <button onClick={speak} className="btn" aria-label="Read response aloud">
+        🔈 Read Aloud
+      </button>
     </div>
   );
 }
