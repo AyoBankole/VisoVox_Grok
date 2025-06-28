@@ -20,4 +20,11 @@ async def caption_image(file: UploadFile = File(...)):
     os.remove(temp_path)
 
     caption = get_caption(image_url)
-    return {"caption": caption}
+    return {
+        "status": "success",
+        "message": "Image uploaded and caption generated successfully.",
+        "data": {
+            "image_url": image_url,
+            "caption": caption
+        }
+    }

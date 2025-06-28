@@ -20,4 +20,11 @@ async def ocr_image(file: UploadFile = File(...)):
     os.remove(temp_path)
 
     text = extract_text(image_url)
-    return {"text": text}
+    return {
+        "status": "success",
+        "message": "Text extracted from image successfully.",
+        "data": {
+            "image_url": image_url,
+            "extracted_text": text
+        }
+    }

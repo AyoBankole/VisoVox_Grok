@@ -20,4 +20,12 @@ async def vqa_image(file: UploadFile = File(...), question: str = Form(...)):
     os.remove(temp_path)
 
     answer = answer_question(image_url, question)
-    return {"answer": answer}
+    return {
+        "status": "success",
+        "message": "Answer generated from image and question successfully.",
+        "data": {
+            "image_url": image_url,
+            "question": question,
+            "answer": answer
+        }
+    }
