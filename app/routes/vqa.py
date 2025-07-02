@@ -7,7 +7,7 @@ import uuid
 
 router = APIRouter()
 
-@router.post("/api/vqa/")
+@router.post("/")
 async def vqa_image(file: UploadFile = File(...), question: str = Form(...)):
     filename = f"{uuid.uuid4()}.png"
     temp_path = os.path.join("temp", filename)

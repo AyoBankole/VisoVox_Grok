@@ -7,7 +7,7 @@ import uuid
 
 router = APIRouter()
 
-@router.post("/api/caption/")
+@router.post("/")
 async def caption_image(file: UploadFile = File(...)):
     filename = f"{uuid.uuid4()}.png"
     temp_path = os.path.join("temp", filename)

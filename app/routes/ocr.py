@@ -7,7 +7,7 @@ import uuid
 
 router = APIRouter()
 
-@router.post("/api/ocr/")
+@router.post("/")
 async def ocr_image(file: UploadFile = File(...)):
     filename = f"{uuid.uuid4()}.png"
     temp_path = os.path.join("temp", filename)
