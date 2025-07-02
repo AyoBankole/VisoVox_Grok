@@ -1,8 +1,14 @@
+import sys
+assert sys.version_info >= (3, 9), "Python 3.9+ is required"
+import os
+# Ensure required directories exist at startup
+for d in ["app/static", "app/static/audio_output", "app/static/uploads", "app/temp"]:
+    os.makedirs(d, exist_ok=True)
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
-import os
 
 # ✅ Load environment variables early
 load_dotenv()
