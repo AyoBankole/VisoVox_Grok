@@ -24,7 +24,7 @@ export default function AudioInput({ onVoiceCommand }) {
   }
 
   return (
-    <div className="voice-input" role="form" aria-labelledby="voice-label">
+    <div className="voice-input flex flex-col sm:flex-row gap-2 sm:gap-4 items-center justify-center mt-2" role="form" aria-labelledby="voice-label">
       <p id="voice-label" className="sr-only">Voice Control Section</p>
 
       <button onClick={handleStart} className="btn" aria-label="Start voice recognition">

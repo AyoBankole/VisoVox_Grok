@@ -37,14 +37,14 @@ export default function Home() {
   }
 
   return (
-    <main>
-      <h1 className="app-header">VisoVox AI Visual Assistant</h1>
-      <div className="main-grid">
-        <section>
+    <main className="min-h-screen flex flex-col items-center p-4 bg-gray-50">
+      <h1 className="app-header text-2xl md:text-4xl font-bold mb-6 text-center">VisoVox AI Visual Assistant</h1>
+      <div className="main-grid grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-5xl">
+        <section className="flex flex-col gap-4">
           <UploadForm onSubmit={handleImageSubmit} loading={loading} />
           <AudioInput onTranscribe={handleAudioTranscribe} loading={loading} />
         </section>
-        <section>
+        <section className="flex flex-col gap-4">
           <OutputDisplay result={result} imageUrl={imageUrl} mode={mode} onSpeak={handleSpeak} />
         </section>
       </div>

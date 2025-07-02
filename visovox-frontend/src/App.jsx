@@ -179,7 +179,7 @@ export default function App() {
 
   // Home Page Component
   const HomePage = () => (
-    <div className="home-container">
+    <div className="home-container min-h-screen flex flex-col items-center justify-center p-4 sm:p-8 bg-gray-50">
       <div className="home-logo">
         <svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
           {/* VisoVox Logo Recreation */}
@@ -235,7 +235,7 @@ export default function App() {
 
   // Main App Component
   const MainApp = () => (
-    <div className="main-app-container">
+    <div className="main-app-container min-h-screen flex flex-col md:flex-row gap-4 p-4 md:p-8 bg-white">
       {/* Navigation */}
       <nav className="app-nav">
         <button 
@@ -400,7 +400,7 @@ const NotificationContainer = ({ notifications }) => {
   if (notifications.length === 0) return null;
 
   return (
-    <div className="notification-container">
+    <div className="fixed bottom-4 right-4 w-full max-w-xs sm:max-w-sm md:max-w-md z-50">
       {notifications.map(notification => (
         <div 
           key={notification.id}

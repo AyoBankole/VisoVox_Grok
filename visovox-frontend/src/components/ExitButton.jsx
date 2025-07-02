@@ -4,7 +4,7 @@ export default function ExitButton() {
   };
 
   return (
-    <button onClick={handleExit} className="btn exit-button" aria-label="Exit the app">
+    <button onClick={handleExit} className="btn exit-button py-3 px-6 text-lg rounded-lg mt-4 w-full sm:w-auto" aria-label="Exit the app">
       ❌ Exit
     </button>
   );

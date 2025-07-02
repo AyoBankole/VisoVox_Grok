@@ -13,8 +13,8 @@ export default function CameraFeed() {
   }, []);
 
   return (
-    <div className="camera-area" aria-label="Live camera feed">
-      <video ref={videoRef} autoPlay playsInline className="camera-video" />
+    <div className="camera-area w-full max-w-md mx-auto rounded-lg overflow-hidden shadow-md bg-black aspect-video" aria-label="Live camera feed">
+      <video ref={videoRef} autoPlay playsInline className="camera-video w-full h-auto object-cover" />
     </div>
   );
 }
