@@ -19,20 +19,18 @@ export default function App() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const fileInputRef = useRef(null); // For gallery
+  const [currentImage, setCurrentImage] = useState(null);
 
   // Enhanced action handler with loading states and animations
   const handleAction = async (taskType) => {
-    if (!selectedImage && capturedImages.length === 0) {
+    if (!currentImage) {
       setOutput("Please capture or select an image first.");
       return;
     }
     setIsLoading(true);
     setOutput(`Processing ${taskType}...`);
     try {
-      // Use the most recent image if none is selected
-      const image = selectedImage || capturedImages[0];
-      // Convert base64 to Blob
-      const res = await fetch(image.data);
+      const res = await fetch(currentImage.data);
       const blob = await res.blob();
       const formData = new FormData();
       formData.append("file", blob, `image.png`);
@@ -106,47 +104,22 @@ export default function App() {
     }
   };
 
-  // Image capture functionality
+  // Capture image from camera and set as currentImage
   const captureImage = () => {
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
       const context = canvas.getContext('2d');
-      
-      // Set canvas dimensions to match video
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
-      
-      // Draw video frame to canvas
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      
-      // Convert to image data
       const imageData = canvas.toDataURL('image/png');
-      const timestamp = new Date().toLocaleString();
-      
-      // Add to captured images
-      const newImage = {
-        id: Date.now(),
-        data: imageData,
-        timestamp: timestamp
-      };
-      
-      setCapturedImages(prev => [newImage, ...prev]);
-      addNotification('Image captured successfully!', 'success');
-      setOutput(`Image captured at ${timestamp}`);
-      
-      // Add capture animation
-      const captureBtn = document.querySelector('.capture-button');
-      if (captureBtn) {
-        captureBtn.classList.add('capturing');
-        setTimeout(() => {
-          captureBtn.classList.remove('capturing');
-        }, 300);
-      }
+      setCurrentImage({ data: imageData, timestamp: new Date().toLocaleString() });
+      setOutput("");
     }
   };
 
-  // Handler for gallery file selection
+  // Handle gallery file selection and set as currentImage
   const handleGalleryClick = () => {
     if (fileInputRef.current) fileInputRef.current.click();
   };
@@ -155,19 +128,17 @@ export default function App() {
     if (file) {
       const reader = new FileReader();
       reader.onload = (ev) => {
-        const imageData = ev.target.result;
-        const timestamp = new Date().toLocaleString();
-        const newImage = {
-          id: Date.now(),
-          data: imageData,
-          timestamp: timestamp
-        };
-        setCapturedImages(prev => [newImage, ...prev]);
-        addNotification('Image selected from gallery!', 'success');
-        setOutput(`Image selected at ${timestamp}`);
+        setCurrentImage({ data: ev.target.result, timestamp: new Date().toLocaleString() });
+        setOutput("");
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  // Retake: clear current image and show camera feed
+  const handleRetake = () => {
+    setCurrentImage(null);
+    setOutput("");
   };
 
   // Notification system
@@ -325,17 +296,17 @@ export default function App() {
           <h2 id="camera-label" className="sr-only">Camera Live Feed</h2>
           <div className="camera-container">
             {/* Show camera feed if no image is selected */}
-            {!selectedImage ? (
+            {!currentImage ? (
               <>
                 <CameraFeed videoRef={videoRef} />
                 <div className="camera-controls">
-                  <button className="gallery-button" onClick={handleGalleryClick} title="View captured images">📷 Gallery ({capturedImages.length})</button>
+                  <button className="gallery-button" onClick={handleGalleryClick} title="Upload from gallery">📷 Gallery</button>
                   <button className="capture-button" onClick={captureImage} disabled={isLoading} title="Capture Image (Ctrl+C)" aria-label="Capture current video frame">📸</button>
                 </div>
               </>
             ) : (
               <div className="captured-image-preview flex flex-col items-center">
-                <img src={selectedImage.data} alt="Captured" className="image-preview mb-2" style={{ maxWidth: 400, borderRadius: 8 }} />
+                <img src={currentImage.data} alt="Captured" className="image-preview mb-2" style={{ maxWidth: 400, borderRadius: 8 }} />
                 <div className="flex gap-2">
                   <button className="btn" onClick={handleRetake}>Retake</button>
                   <button className="btn" onClick={handleGalleryClick}>Pick from Gallery</button>
@@ -366,7 +337,7 @@ export default function App() {
               value={question}
               onChange={e => setQuestion(e.target.value)}
               className="question-input mt-2 p-2 border rounded w-full max-w-md"
-              disabled={!selectedImage && capturedImages.length === 0}
+              disabled={!currentImage}
             />
           </div>
         </section>
@@ -400,37 +371,10 @@ export default function App() {
     </div>
   );
 
-  // New: handle image selection for actions
-  const handleImageSelect = (img) => {
-    setSelectedImage(img);
-    setOutput("");
-  };
-  const handleRetake = () => {
-    setSelectedImage(null);
-    setOutput("");
-  };
-
   return (
     <>
       {/* Notifications */}
       <NotificationContainer notifications={notifications} />
-      
-      {/* Captured Images Display */}
-      {capturedImages.length > 0 && currentView === 'main' && (
-        <div className="captured-images">
-          <h4 style={{ color: 'white', marginBottom: '1rem' }}>Recent Captures</h4>
-          {capturedImages.slice(0, 3).map(image => (
-            <img
-              key={image.id}
-              src={image.data}
-              alt={`Captured at ${image.timestamp}`}
-              className="image-preview"
-              onClick={() => handleImageSelect(image)}
-              title={`Captured: ${image.timestamp}`}
-            />
-          ))}
-        </div>
-      )}
       
       {/* Image Modal */}
       {selectedImage && (
