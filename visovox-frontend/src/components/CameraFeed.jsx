@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 
-export default function CameraFeed() {
-  const videoRef = useRef();
+export default function CameraFeed({ videoRef: externalVideoRef }) {
+  const internalVideoRef = useRef();
+  const videoRef = externalVideoRef || internalVideoRef;
 
   useEffect(() => {
     async function enableCamera() {
@@ -10,7 +11,7 @@ export default function CameraFeed() {
     }
 
     enableCamera();
-  }, []);
+  }, [videoRef]);
 
   return (
     <div className="camera-area w-full max-w-md mx-auto rounded-lg overflow-hidden shadow-md bg-black aspect-video" aria-label="Live camera feed">

@@ -16,6 +16,7 @@ export default function App() {
   const outputRef = useRef(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const fileInputRef = useRef(null); // For gallery
 
   // Enhanced action handler with loading states and animations
   const handleAction = async (taskType) => {
@@ -115,6 +116,30 @@ export default function App() {
           captureBtn.classList.remove('capturing');
         }, 300);
       }
+    }
+  };
+
+  // Handler for gallery file selection
+  const handleGalleryClick = () => {
+    if (fileInputRef.current) fileInputRef.current.click();
+  };
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const imageData = ev.target.result;
+        const timestamp = new Date().toLocaleString();
+        const newImage = {
+          id: Date.now(),
+          data: imageData,
+          timestamp: timestamp
+        };
+        setCapturedImages(prev => [newImage, ...prev]);
+        addNotification('Image selected from gallery!', 'success');
+        setOutput(`Image selected at ${timestamp}`);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -252,7 +277,7 @@ export default function App() {
         
         {/* Header */}
         <header className="app-header">
-          <HamburgerMenu />
+          <HamburgerMenu onGalleryClick={handleGalleryClick} />
           <div className="app-title-container">
             <h1 className="app-title" role="heading" aria-level="1">
               VisoVox AI
@@ -272,7 +297,7 @@ export default function App() {
         <section className="camera-section" aria-labelledby="camera-label">
           <h2 id="camera-label" className="sr-only">Camera Live Feed</h2>
           <div className="camera-container">
-            <CameraFeed ref={videoRef} />
+            <CameraFeed videoRef={videoRef} />
             <div className="camera-overlay">
               <div className="camera-status">
                 <span className="status-dot"></span>
@@ -284,7 +309,7 @@ export default function App() {
             <div className="camera-controls">
               <button 
                 className="gallery-button"
-                onClick={() => addNotification('Gallery opened', 'info')}
+                onClick={handleGalleryClick}
                 title="View captured images"
               >
                 📷 Gallery ({capturedImages.length})
@@ -346,6 +371,14 @@ export default function App() {
 
         {/* Hidden canvas for image capture */}
         <canvas ref={canvasRef} style={{ display: 'none' }} />
+        {/* Hidden file input for gallery */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={handleFileChange}
+        />
 
         {/* Keyboard Shortcuts Helper */}
         <KeyboardShortcuts />
