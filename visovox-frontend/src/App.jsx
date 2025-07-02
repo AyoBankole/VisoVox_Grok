@@ -4,6 +4,7 @@ import ExitButton from './components/ExitButton';
 import CameraFeed from './components/CameraFeed';
 import ActionButtons from './components/ActionButtons';
 import AudioAssistant from './components/AudioAssistant';
+import { uploadImage } from './services/api';
 
 export default function App() {
   const [currentView, setCurrentView] = useState('home'); // 'home' or 'main'
@@ -13,6 +14,7 @@ export default function App() {
   const [notifications, setNotifications] = useState([]);
   const [capturedImages, setCapturedImages] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [question, setQuestion] = useState("");
   const outputRef = useRef(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -20,15 +22,40 @@ export default function App() {
 
   // Enhanced action handler with loading states and animations
   const handleAction = async (taskType) => {
+    if (!selectedImage && capturedImages.length === 0) {
+      setOutput("Please capture or select an image first.");
+      return;
+    }
     setIsLoading(true);
-    setOutput(`Initializing ${taskType}...`);
-    
-    // Simulate processing time
-    setTimeout(() => {
-      setOutput(`${taskType} task completed successfully!`);
-      setIsLoading(false);
-      addNotification(`${taskType} executed`, 'success');
-    }, 2000);
+    setOutput(`Processing ${taskType}...`);
+    try {
+      // Use the most recent image if none is selected
+      const image = selectedImage || capturedImages[0];
+      // Convert base64 to Blob
+      const res = await fetch(image.data);
+      const blob = await res.blob();
+      const formData = new FormData();
+      formData.append("file", blob, `image.png`);
+      let apiType = "";
+      let apiRes;
+      if (taskType === "caption") {
+        apiType = "caption";
+        apiRes = await uploadImage(formData, apiType);
+        setOutput(apiRes.data.caption || "No caption returned.");
+      } else if (taskType === "read") {
+        apiType = "ocr";
+        apiRes = await uploadImage(formData, apiType);
+        setOutput(apiRes.data.extracted_text || "No text found.");
+      } else if (taskType === "ask") {
+        apiType = "vqa";
+        formData.append("question", question);
+        apiRes = await uploadImage(formData, apiType);
+        setOutput(apiRes.data.answer || "No answer returned.");
+      }
+    } catch (err) {
+      setOutput("Error processing image. Please try again.");
+    }
+    setIsLoading(false);
   };
 
   // Enhanced voice command handler
@@ -169,15 +196,15 @@ export default function App() {
         switch (event.key) {
           case '1':
             event.preventDefault();
-            handleAction('Object Detection');
+            handleAction('caption');
             break;
           case '2':
             event.preventDefault();
-            handleAction('Text Recognition');
+            handleAction('read');
             break;
           case '3':
             event.preventDefault();
-            handleAction('Face Recognition');
+            handleAction('ask');
             break;
           case 'Enter':
             event.preventDefault();
@@ -297,53 +324,51 @@ export default function App() {
         <section className="camera-section" aria-labelledby="camera-label">
           <h2 id="camera-label" className="sr-only">Camera Live Feed</h2>
           <div className="camera-container">
-            <CameraFeed videoRef={videoRef} />
-            <div className="camera-overlay">
-              <div className="camera-status">
-                <span className="status-dot"></span>
-                <span>Live</span>
+            {/* Show camera feed if no image is selected */}
+            {!selectedImage ? (
+              <>
+                <CameraFeed videoRef={videoRef} />
+                <div className="camera-controls">
+                  <button className="gallery-button" onClick={handleGalleryClick} title="View captured images">📷 Gallery ({capturedImages.length})</button>
+                  <button className="capture-button" onClick={captureImage} disabled={isLoading} title="Capture Image (Ctrl+C)" aria-label="Capture current video frame">📸</button>
+                </div>
+              </>
+            ) : (
+              <div className="captured-image-preview flex flex-col items-center">
+                <img src={selectedImage.data} alt="Captured" className="image-preview mb-2" style={{ maxWidth: 400, borderRadius: 8 }} />
+                <div className="flex gap-2">
+                  <button className="btn" onClick={handleRetake}>Retake</button>
+                  <button className="btn" onClick={handleGalleryClick}>Pick from Gallery</button>
+                </div>
               </div>
-            </div>
+            )}
             
-            {/* Camera Controls */}
-            <div className="camera-controls">
-              <button 
-                className="gallery-button"
-                onClick={handleGalleryClick}
-                title="View captured images"
-              >
-                📷 Gallery ({capturedImages.length})
-              </button>
-              
-              <button 
-                className="capture-button"
-                onClick={captureImage}
-                disabled={isLoading}
-                title="Capture Image (Ctrl+C)"
-                aria-label="Capture current video frame"
-              >
-                📸
-              </button>
-              
-              <button 
-                className="gallery-button"
-                onClick={() => setCapturedImages([])}
-                title="Clear all images"
-                disabled={capturedImages.length === 0}
-              >
-                🗑️ Clear
-              </button>
-            </div>
+            {/* Hidden canvas for image capture */}
+            <canvas ref={canvasRef} style={{ display: 'none' }} />
+            {/* Hidden file input for gallery */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={handleFileChange}
+            />
           </div>
         </section>
 
-        {/* Action Buttons */}
+        {/* Action Buttons and Question Input */}
         <section className="action-section" role="region" aria-label="Task Options">
-          <ActionButtons 
-            onAction={handleAction} 
-            disabled={isLoading}
-            className={isLoading ? 'loading' : ''}
-          />
+          <div className="flex flex-col items-center gap-2">
+            <ActionButtons onAction={handleAction} />
+            <input
+              type="text"
+              placeholder="Ask a question about the image..."
+              value={question}
+              onChange={e => setQuestion(e.target.value)}
+              className="question-input mt-2 p-2 border rounded w-full max-w-md"
+              disabled={!selectedImage && capturedImages.length === 0}
+            />
+          </div>
         </section>
 
         {/* Voice Assistant */}
@@ -369,22 +394,21 @@ export default function App() {
           </div>
         </section>
 
-        {/* Hidden canvas for image capture */}
-        <canvas ref={canvasRef} style={{ display: 'none' }} />
-        {/* Hidden file input for gallery */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          style={{ display: 'none' }}
-          onChange={handleFileChange}
-        />
-
         {/* Keyboard Shortcuts Helper */}
         <KeyboardShortcuts />
       </div>
     </div>
   );
+
+  // New: handle image selection for actions
+  const handleImageSelect = (img) => {
+    setSelectedImage(img);
+    setOutput("");
+  };
+  const handleRetake = () => {
+    setSelectedImage(null);
+    setOutput("");
+  };
 
   return (
     <>
@@ -401,7 +425,7 @@ export default function App() {
               src={image.data}
               alt={`Captured at ${image.timestamp}`}
               className="image-preview"
-              onClick={() => setSelectedImage(image)}
+              onClick={() => handleImageSelect(image)}
               title={`Captured: ${image.timestamp}`}
             />
           ))}
@@ -497,9 +521,9 @@ const KeyboardShortcuts = () => {
         <div className="shortcuts-panel">
           <h4>Keyboard Shortcuts</h4>
           <ul>
-            <li><kbd>Ctrl</kbd> + <kbd>1</kbd> - Object Detection</li>
+            <li><kbd>Ctrl</kbd> + <kbd>1</kbd> - Caption</li>
             <li><kbd>Ctrl</kbd> + <kbd>2</kbd> - Text Recognition</li>
-            <li><kbd>Ctrl</kbd> + <kbd>3</kbd> - Face Recognition</li>
+            <li><kbd>Ctrl</kbd> + <kbd>3</kbd> - Ask</li>
             <li><kbd>Ctrl</kbd> + <kbd>C</kbd> - Capture Image</li>
             <li><kbd>Ctrl</kbd> + <kbd>Enter</kbd> - Voice Command</li>
             <li><kbd>ESC</kbd> - Back to Home</li>
