@@ -6,6 +6,7 @@ import ActionButtons from './components/ActionButtons';
 import AudioAssistant from './components/AudioAssistant';
 import { uploadImage } from './services/api';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
+import logo from '../vivox.png';
 
 const APP_NAME = 'VisoVox AI';
 
@@ -211,19 +212,15 @@ export default function App() {
   // Home Screen
   if (screen === 'home') {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-2 w-full max-w-md mx-auto">
-        <header className="w-full flex justify-between items-center mb-2 px-2">
-          <h1 className="text-xl font-semibold">{APP_NAME}</h1>
-          <button className="bg-sky-500 text-white rounded-lg px-4 py-2 text-base font-bold" onClick={() => setScreen('camera')}>START</button>
-        </header>
-        <div className="w-full flex justify-center">
-          <div className="bg-gray-300 rounded-lg w-72 h-48 flex items-center justify-center mb-4">
-            {/* Placeholder image or last image */}
-            <span className="text-gray-600 text-center">Image Area</span>
-          </div>
+      <div className="min-h-screen flex flex-col items-center justify-between bg-gray-50 p-2 w-full max-w-md mx-auto">
+        <div className="flex flex-col items-center w-full mt-8">
+          <h1 className="text-2xl font-bold mb-2 text-center">VisoVox AI</h1>
+          <img src={logo} alt="VisoVox Logo" className="w-40 h-40 object-contain mx-auto mb-4" />
+          <div className="text-lg font-semibold text-center mb-2">Welcome to VisoVox AI</div>
+          <button className="bg-sky-500 text-white rounded-lg px-6 py-2 text-base font-bold mt-2 mb-4" onClick={() => setScreen('camera')}>START</button>
         </div>
-        <div className="w-full max-w-xs mx-auto bg-white p-3 rounded-lg border mt-2">
-          <p className="text-sm text-gray-700">Welcome to VoicePic! To begin, capture or upload an image by tapping the camera icon. Once your image is ready, you can proceed to edit or analyze it using the tools provided in the app. Enjoy exploring the features!</p>
+        <div className="w-full max-w-xs mx-auto bg-white p-3 rounded-lg border mb-6 text-center text-sm text-gray-700">
+          To begin, capture or upload an image by tapping the camera icon. Once your image is ready, you can proceed to edit or analyze it using the tools provided in the app. Enjoy exploring the features!
         </div>
       </div>
     );
