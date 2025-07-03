@@ -20,11 +20,29 @@ export default function App() {
   const canvasRef = useRef(null);
   const fileInputRef = useRef(null); // For gallery
   const [currentImage, setCurrentImage] = useState(null);
+  const [showAskBar, setShowAskBar] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
 
-  // Enhanced action handler with loading states and animations
+  // Helper to speak text aloud
+  const speakText = (text) => {
+    try {
+      speechSynthesis.cancel();
+      const utterance = new window.SpeechSynthesisUtterance(text);
+      utterance.lang = "en-US";
+      utterance.rate = 1;
+      utterance.pitch = 1;
+      utterance.volume = 1;
+      speechSynthesis.speak(utterance);
+    } catch (error) {
+      setOutput(`Speech synthesis not supported: ${error.message}`);
+    }
+  };
+
+  // Handle action buttons to send currentImage to backend
   const handleAction = async (taskType) => {
     if (!currentImage) {
       setOutput("Please capture or select an image first.");
+      speakText("Please capture or select an image first.");
       return;
     }
     setIsLoading(true);
@@ -40,18 +58,22 @@ export default function App() {
         apiType = "caption";
         apiRes = await uploadImage(formData, apiType);
         setOutput(apiRes.data.caption || "No caption returned.");
+        speakText(apiRes.data.caption || "No caption returned.");
       } else if (taskType === "read") {
         apiType = "ocr";
         apiRes = await uploadImage(formData, apiType);
         setOutput(apiRes.data.extracted_text || "No text found.");
+        speakText(apiRes.data.extracted_text || "No text found.");
       } else if (taskType === "ask") {
         apiType = "vqa";
         formData.append("question", question);
         apiRes = await uploadImage(formData, apiType);
         setOutput(apiRes.data.answer || "No answer returned.");
+        speakText(apiRes.data.answer || "No answer returned.");
       }
     } catch (err) {
       setOutput("Error processing image. Please try again.");
+      speakText("Error processing image. Please try again.");
     }
     setIsLoading(false);
   };
@@ -67,41 +89,6 @@ export default function App() {
       setIsVoiceActive(false);
       addNotification('Voice command processed', 'info');
     }, 1500);
-  };
-
-  // Enhanced text-to-speech with better error handling
-  const speakText = (text) => {
-    try {
-      // Cancel any ongoing speech
-      speechSynthesis.cancel();
-      
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = "en-US";
-      utterance.rate = 0.9;
-      utterance.pitch = 1;
-      utterance.volume = 0.8;
-      
-      // Add event listeners for better UX
-      utterance.onstart = () => {
-        setOutput(`Speaking: "${text}"`);
-        addNotification('Speech started', 'info');
-      };
-      
-      utterance.onend = () => {
-        setOutput('Speech completed');
-        addNotification('Speech completed', 'success');
-      };
-      
-      utterance.onerror = (event) => {
-        setOutput(`Speech error: ${event.error}`);
-        addNotification('Speech failed', 'error');
-      };
-      
-      speechSynthesis.speak(utterance);
-    } catch (error) {
-      setOutput(`Speech synthesis not supported: ${error.message}`);
-      addNotification('Speech not available', 'error');
-    }
   };
 
   // Capture image from camera and set as currentImage
@@ -139,6 +126,8 @@ export default function App() {
   const handleRetake = () => {
     setCurrentImage(null);
     setOutput("");
+    setShowAskBar(false);
+    setQuestion("");
   };
 
   // Notification system
@@ -258,115 +247,66 @@ export default function App() {
 
   // Main App Component
   const MainApp = () => (
-    <div className="main-app-container min-h-screen flex flex-col md:flex-row gap-4 p-4 md:p-8 bg-white">
-      {/* Navigation */}
-      <nav className="app-nav">
-        <button 
-          className="back-button"
-          onClick={() => setCurrentView('home')}
-          aria-label="Back to Home"
-          title="Back to Home (ESC)"
-        >
-          ←
+    <div className="main-app-container min-h-screen flex flex-col items-center justify-center p-2 sm:p-4 bg-white">
+      {/* Header */}
+      <header className="w-full flex justify-between items-center mb-2">
+        <div></div>
+        <button className="btn exit-button text-lg px-4 py-2" aria-label="Exit the app">EXIT</button>
+      </header>
+      {/* Image or Camera */}
+      <div className="w-full flex flex-col items-center">
+        {!currentImage ? (
+          <>
+            <CameraFeed videoRef={videoRef} />
+            <button className="capture-button rounded-full bg-blue-600 text-white text-3xl w-24 h-24 flex items-center justify-center mt-4 mb-2 shadow-lg" onClick={captureImage} aria-label="Capture image from camera" disabled={isLoading}>📸</button>
+            <button className="gallery-button btn mt-2 w-full max-w-xs" onClick={handleGalleryClick} aria-label="Upload from gallery" disabled={isLoading}>Upload from Gallery</button>
+          </>
+        ) : (
+          <div className="flex flex-col items-center w-full">
+            <img src={currentImage.data} alt="Captured" className="image-preview mb-2 w-full max-w-xs rounded-lg border shadow" style={{ maxHeight: 300 }} />
+            <div className="flex gap-2 mb-2 w-full justify-center">
+              <button className="btn w-1/2" onClick={handleRetake} aria-label="Retake photo" disabled={isLoading}>Retake</button>
+              <button className="btn w-1/2" onClick={handleGalleryClick} aria-label="Pick from gallery" disabled={isLoading}>Pick from Gallery</button>
+            </div>
+          </div>
+        )}
+        {/* Hidden canvas for image capture */}
+        <canvas ref={canvasRef} style={{ display: 'none' }} />
+        {/* Hidden file input for gallery */}
+        <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} />
+      </div>
+      {/* Action Buttons */}
+      <div className="flex flex-col sm:flex-row gap-3 mt-4 w-full max-w-xs mx-auto">
+        <button className="btn w-full py-3 text-lg" onClick={() => handleAction('read')} aria-label="Read text in image" disabled={!currentImage || isLoading}>🔊 Read</button>
+        <button className="btn w-full py-3 text-lg" onClick={() => setShowAskBar(true)} aria-label="Ask a question about image" disabled={!currentImage || isLoading}>❓ Ask</button>
+        <button className="btn w-full py-3 text-lg" onClick={() => handleAction('caption')} aria-label="Generate caption for image" disabled={!currentImage || isLoading}>📝 Caption</button>
+      </div>
+      {/* Big Record Button for Voice Input (Ask) */}
+      <div className="flex flex-col items-center mt-4 w-full max-w-xs mx-auto">
+        <button className={`btn rounded-full bg-green-600 text-white text-4xl w-20 h-20 flex items-center justify-center shadow-lg ${isRecording ? 'animate-pulse' : ''}`} onClick={() => setIsRecording(true)} aria-label="Record a question for Ask" disabled={!currentImage || isLoading}>
+          🎤
         </button>
-      </nav>
-
-      <div className="app-container" role="main" aria-label="VisoVox AI App">
-        
-        {/* Header */}
-        <header className="app-header">
-          <HamburgerMenu onGalleryClick={handleGalleryClick} />
-          <div className="app-title-container">
-            <h1 className="app-title" role="heading" aria-level="1">
-              VisoVox AI
-            </h1>
-            <p className="app-subtitle">Intelligent Vision & Voice Assistant</p>
-          </div>
-          <ExitButton />
-        </header>
-
-        {/* Status Indicator */}
-        <StatusIndicator 
-          isLoading={isLoading} 
-          isVoiceActive={isVoiceActive} 
-        />
-
-        {/* Camera View */}
-        <section className="camera-section" aria-labelledby="camera-label">
-          <h2 id="camera-label" className="sr-only">Camera Live Feed</h2>
-          <div className="camera-container">
-            {/* Show camera feed if no image is selected */}
-            {!currentImage ? (
-              <>
-                <CameraFeed videoRef={videoRef} />
-                <div className="camera-controls">
-                  <button className="gallery-button" onClick={handleGalleryClick} title="Upload from gallery">📷 Gallery</button>
-                  <button className="capture-button" onClick={captureImage} disabled={isLoading} title="Capture Image (Ctrl+C)" aria-label="Capture current video frame">📸</button>
-                </div>
-              </>
-            ) : (
-              <div className="captured-image-preview flex flex-col items-center">
-                <img src={currentImage.data} alt="Captured" className="image-preview mb-2" style={{ maxWidth: 400, borderRadius: 8 }} />
-                <div className="flex gap-2">
-                  <button className="btn" onClick={handleRetake}>Retake</button>
-                  <button className="btn" onClick={handleGalleryClick}>Pick from Gallery</button>
-                </div>
-              </div>
-            )}
-            
-            {/* Hidden canvas for image capture */}
-            <canvas ref={canvasRef} style={{ display: 'none' }} />
-            {/* Hidden file input for gallery */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              style={{ display: 'none' }}
-              onChange={handleFileChange}
-            />
-          </div>
-        </section>
-
-        {/* Action Buttons and Question Input */}
-        <section className="action-section" role="region" aria-label="Task Options">
-          <div className="flex flex-col items-center gap-2">
-            <ActionButtons onAction={handleAction} />
-            <input
-              type="text"
-              placeholder="Ask a question about the image..."
-              value={question}
-              onChange={e => setQuestion(e.target.value)}
-              className="question-input mt-2 p-2 border rounded w-full max-w-md"
-              disabled={!currentImage}
-            />
-          </div>
-        </section>
-
-        {/* Voice Assistant */}
-        <section className="voice-section" role="region" aria-label="Voice Assistant">
-          <h3 className="section-title">Voice Assistant</h3>
-          <AudioAssistant
-            onVoiceCommand={handleVoiceCommand}
-            speakText={speakText}
-            isActive={isVoiceActive}
-            disabled={isLoading}
+        <span className="text-sm mt-1">Voice input for Ask</span>
+      </div>
+      {/* Ask Bar (text or voice) */}
+      {showAskBar && (
+        <div className="flex flex-col items-center mt-3 w-full max-w-xs mx-auto bg-white p-3 rounded shadow">
+          <input
+            type="text"
+            placeholder="Ask a question about the image..."
+            value={question}
+            onChange={e => setQuestion(e.target.value)}
+            className="question-input p-2 border rounded w-full mb-2"
+            aria-label="Type your question"
+            disabled={!currentImage || isLoading}
           />
-        </section>
-
-        {/* Enhanced Output */}
-        <section className="output-section" aria-live="assertive">
-          <h3 className="section-title">System Output</h3>
-          <div 
-            ref={outputRef}
-            className={`output-area ${output ? 'has-content' : ''} ${isLoading ? 'loading' : ''}`}
-            role="log"
-          >
-            {output || "Ready to assist you..."}
-          </div>
-        </section>
-
-        {/* Keyboard Shortcuts Helper */}
-        <KeyboardShortcuts />
+          <button className="btn w-full mb-2" onClick={() => handleAction('ask')} aria-label="Submit question" disabled={!currentImage || isLoading || !question}>Ask</button>
+          <button className="btn w-full" onClick={() => setShowAskBar(false)} aria-label="Close ask bar">Close</button>
+        </div>
+      )}
+      {/* Output Section */}
+      <div className="output-section mt-4 w-full max-w-xs mx-auto p-3 bg-gray-100 rounded-lg min-h-[60px] text-lg" aria-live="assertive">
+        {output || "Ready to assist you..."}
       </div>
     </div>
   );
