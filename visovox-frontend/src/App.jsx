@@ -5,6 +5,7 @@ import CameraFeed from './components/CameraFeed';
 import ActionButtons from './components/ActionButtons';
 import AudioAssistant from './components/AudioAssistant';
 import { uploadImage } from './services/api';
+import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 
 export default function App() {
   const [currentView, setCurrentView] = useState('home'); // 'home' or 'main'
@@ -22,6 +23,9 @@ export default function App() {
   const [currentImage, setCurrentImage] = useState(null);
   const [showAskBar, setShowAskBar] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [cameraFacingMode, setCameraFacingMode] = useState('environment');
+  const askInputRef = useRef(null);
+  const { transcript, listening, resetTranscript, browserSupportsSpeechRecognition } = useSpeechRecognition();
 
   // Helper to speak text aloud
   const speakText = (text) => {
@@ -128,6 +132,7 @@ export default function App() {
     setOutput("");
     setShowAskBar(false);
     setQuestion("");
+    resetTranscript();
   };
 
   // Notification system
@@ -188,6 +193,36 @@ export default function App() {
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [currentView]);
+
+  // Voice input for Ask using react-speech-recognition
+  const handleVoiceInput = () => {
+    if (!browserSupportsSpeechRecognition) {
+      setOutput("Speech recognition not supported in this browser.");
+      return;
+    }
+    setIsRecording(true);
+    resetTranscript();
+    SpeechRecognition.startListening({ continuous: false });
+  };
+  // When listening stops, update question
+  useEffect(() => {
+    if (!listening && isRecording) {
+      setQuestion(transcript);
+      setIsRecording(false);
+    }
+  }, [listening]);
+
+  // Focus ask input when Ask bar is shown
+  useEffect(() => {
+    if (showAskBar && askInputRef.current) {
+      askInputRef.current.focus();
+    }
+  }, [showAskBar]);
+
+  // Camera switch handler
+  const handleSwitchCamera = () => {
+    setCameraFacingMode((prev) => (prev === 'environment' ? 'user' : 'environment'));
+  };
 
   // Home Page Component
   const HomePage = () => (
@@ -251,19 +286,22 @@ export default function App() {
       {/* Header */}
       <header className="w-full flex justify-between items-center mb-2">
         <div></div>
-        <button className="btn exit-button text-lg px-4 py-2" aria-label="Exit the app">EXIT</button>
+        <button className="btn exit-button text-lg px-4 py-2" aria-label="Exit the app" onClick={() => setCurrentView('home')}>EXIT</button>
       </header>
       {/* Image or Camera */}
       <div className="w-full flex flex-col items-center">
         {!currentImage ? (
           <>
-            <CameraFeed videoRef={videoRef} />
-            <button className="capture-button rounded-full bg-blue-600 text-white text-3xl w-24 h-24 flex items-center justify-center mt-4 mb-2 shadow-lg" onClick={captureImage} aria-label="Capture image from camera" disabled={isLoading}>📸</button>
-            <button className="gallery-button btn mt-2 w-full max-w-xs" onClick={handleGalleryClick} aria-label="Upload from gallery" disabled={isLoading}>Upload from Gallery</button>
+            <CameraFeed videoRef={videoRef} facingMode={cameraFacingMode} />
+            <div className="flex flex-row justify-center gap-4 mt-2">
+              <button className="btn" onClick={handleSwitchCamera} aria-label="Switch camera" disabled={isLoading}>🔄 Switch Camera</button>
+              <button className="capture-button rounded-full bg-blue-600 text-white text-3xl w-24 h-24 flex items-center justify-center shadow-lg" onClick={captureImage} aria-label="Capture image from camera" disabled={isLoading}>📸</button>
+            </div>
+            <button className="gallery-button btn mt-2 w-full max-w-xs mx-auto" onClick={handleGalleryClick} aria-label="Upload from gallery" disabled={isLoading}>Upload from Gallery</button>
           </>
         ) : (
           <div className="flex flex-col items-center w-full">
-            <img src={currentImage.data} alt="Captured" className="image-preview mb-2 w-full max-w-xs rounded-lg border shadow" style={{ maxHeight: 300 }} />
+            <img src={currentImage.data} alt="Captured" className="image-preview mb-2 w-full max-w-xs rounded-lg border shadow" style={{ maxHeight: 300, objectFit: 'contain' }} />
             <div className="flex gap-2 mb-2 w-full justify-center">
               <button className="btn w-1/2" onClick={handleRetake} aria-label="Retake photo" disabled={isLoading}>Retake</button>
               <button className="btn w-1/2" onClick={handleGalleryClick} aria-label="Pick from gallery" disabled={isLoading}>Pick from Gallery</button>
@@ -276,14 +314,14 @@ export default function App() {
         <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} />
       </div>
       {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-3 mt-4 w-full max-w-xs mx-auto">
+      <div className="flex flex-col sm:flex-row gap-3 mt-4 w-full max-w-xs mx-auto items-center justify-center">
         <button className="btn w-full py-3 text-lg" onClick={() => handleAction('read')} aria-label="Read text in image" disabled={!currentImage || isLoading}>🔊 Read</button>
         <button className="btn w-full py-3 text-lg" onClick={() => setShowAskBar(true)} aria-label="Ask a question about image" disabled={!currentImage || isLoading}>❓ Ask</button>
         <button className="btn w-full py-3 text-lg" onClick={() => handleAction('caption')} aria-label="Generate caption for image" disabled={!currentImage || isLoading}>📝 Caption</button>
       </div>
       {/* Big Record Button for Voice Input (Ask) */}
       <div className="flex flex-col items-center mt-4 w-full max-w-xs mx-auto">
-        <button className={`btn rounded-full bg-green-600 text-white text-4xl w-20 h-20 flex items-center justify-center shadow-lg ${isRecording ? 'animate-pulse' : ''}`} onClick={() => setIsRecording(true)} aria-label="Record a question for Ask" disabled={!currentImage || isLoading}>
+        <button className={`btn rounded-full bg-green-600 text-white text-4xl w-20 h-20 flex items-center justify-center shadow-lg ${isRecording ? 'animate-pulse' : ''}`} onClick={handleVoiceInput} aria-label="Record a question for Ask" disabled={!currentImage || isLoading}>
           🎤
         </button>
         <span className="text-sm mt-1">Voice input for Ask</span>
@@ -292,6 +330,7 @@ export default function App() {
       {showAskBar && (
         <div className="flex flex-col items-center mt-3 w-full max-w-xs mx-auto bg-white p-3 rounded shadow">
           <input
+            ref={askInputRef}
             type="text"
             placeholder="Ask a question about the image..."
             value={question}
@@ -305,7 +344,7 @@ export default function App() {
         </div>
       )}
       {/* Output Section */}
-      <div className="output-section mt-4 w-full max-w-xs mx-auto p-3 bg-gray-100 rounded-lg min-h-[60px] text-lg" aria-live="assertive">
+      <div className="output-section mt-4 w-full max-w-xs mx-auto p-3 bg-gray-100 rounded-lg min-h-[60px] text-lg text-center" aria-live="assertive">
         {output || "Ready to assist you..."}
       </div>
     </div>
