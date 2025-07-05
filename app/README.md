@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="visovox-frontend/vivox.png" alt="VisoVox Logo" width="200"/>
+</p>
+
 # VisoVox AI Backend
 
 The backend API for **VisoVox AI** built with **FastAPI**. It serves as the core service layer powering:
