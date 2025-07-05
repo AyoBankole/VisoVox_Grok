@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="visovox-frontend/vivox.png" alt="VisoVox Logo" width="200"/>
+  <img src="visovox-frontend/vivox.png" alt="VisoVox Logo" width="300"/>
 </p>
 
 <h1 align="center">VisoVox AI</h1>
