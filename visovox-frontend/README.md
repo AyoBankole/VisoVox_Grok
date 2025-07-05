@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="visovox-frontend/vivox.png" alt="VisoVox Logo" width="200"/>
+</p>
+
 # VisoVox AI Frontend
 
 A React-based frontend for the VisoVox AI visual assistant application that provides accessibility features through AI-powered image analysis and text-to-speech capabilities.
